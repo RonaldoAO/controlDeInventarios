@@ -1,0 +1,3 @@
+Error_
+-----101929----
+El archivo lleva un flujo en el que al actualizar un registro elimina el archivo y lo vuelve a escribir, este error surge si el archivo no se eliminó correctamente
