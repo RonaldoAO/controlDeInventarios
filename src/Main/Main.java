@@ -22,10 +22,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.ListModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
@@ -51,21 +57,24 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     List<Material> materialesExistentes = null;
     generator generadorPDF;
 
+    DefaultListModel<String> model;
     WriterCSV writer = new WriterCSV();
     private List<Material> materialesNuevos = new ArrayList<>();
     List<models.Registro> registros;
 
     public Main() {
         initComponents();
+        recomendaciones.setOpaque(false);
+        recomendaciones.setSize(0, recomendaciones.getHeight());;
+        model = new DefaultListModel<>();
+        recomendaciones.setModel(model);
         generadorPDF = new generator();
         SpinnerNumberModel modelSpinner = (SpinnerNumberModel) CantidadMaterial.getModel();
         modelSpinner.setMinimum(0);
         CantidadMaterial.setModel(modelSpinner);
         CantidadMaterial1.setModel(modelSpinner);
         NombreMaterialExtra.setVisible(false);
-        NombreMaterialExtra2.setVisible(false);
         Titulo_NombreMaterialExtra.setVisible(false);
-        Titulo_NombreMaterialExtra2.setVisible(false);
 
         if (isFileExists(new File("materiales.csv"))) {
             try {
@@ -75,16 +84,53 @@ public class Main extends javax.swing.JFrame implements ActionListener {
             }
         } else {
             NombreMaterial.addItem("Otro");
-            NombreMaterial2.addItem("Otro");
             NombreMaterialExtra.setVisible(true);
-            NombreMaterialExtra2.setVisible(true);
             Titulo_NombreMaterialExtra.setVisible(true);
-            Titulo_NombreMaterialExtra2.setVisible(true);
         }
         try {
             rellenarTablaDeRegistros();
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(null, "Ah ocurrido un error al rellenar la tabla de registro", "Oh no", JOptionPane.WARNING_MESSAGE);
+        }
+        update(); 
+
+        //Recomendations
+        name.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                update();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                update();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                update();
+            }
+        });
+    }
+
+    public void update() {
+        recomendaciones.setSize(200, recomendaciones.getHeight());;
+        // Obtiene el texto actual del campo de texto
+        String text = name.getText();
+
+        // Crea una lista de recomendaciones basada en el texto
+        List<String> recommendations = new ArrayList<>();
+        for (Material item : materialesExistentes) {
+            if (item.getNombre().toLowerCase().startsWith(text.toLowerCase())
+                    || item.getNombre().toLowerCase().contains(text.toLowerCase())) {
+                recommendations.add(item.getNombre());
+            }
+        }
+
+        // Actualiza el modelo de la lista con las recomendaciones
+        model.clear();
+        for (String item : recommendations) {
+            model.addElement(item);
         }
     }
 
@@ -123,7 +169,6 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     public void rellenarComboBoxMateriales() throws FileNotFoundException, IOException {
         //Crear CSV materiales para poder crear el reporte final
         NombreMaterial.setModel(new DefaultComboBoxModel<>()); //Sustituto al removeallItems
-        NombreMaterial2.setModel(new DefaultComboBoxModel<>());
 
         ReaderCSV reader = new ReaderCSV("materiales.csv");
         materialesExistentes = reader.getMateriales();
@@ -132,10 +177,8 @@ public class Main extends javax.swing.JFrame implements ActionListener {
 
         for (Material material : materialesExistentes) {
             NombreMaterial.addItem(material.getNombre());
-            NombreMaterial2.addItem(material.getNombre());
         }
         NombreMaterial.addItem("Otro");
-        NombreMaterial2.addItem("Otro");
         reader.close();
     }
 
@@ -177,10 +220,8 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         entrego = new javax.swing.JTextField();
         recibio = new javax.swing.JTextField();
         jLabel8 = new javax.swing.JLabel();
-        NombreMaterialExtra2 = new javax.swing.JTextField();
         CantidadMaterial1 = new javax.swing.JSpinner();
         jLabel9 = new javax.swing.JLabel();
-        Titulo_NombreMaterialExtra2 = new javax.swing.JLabel();
         jButton4 = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
         productos1 = new javax.swing.JTable();
@@ -188,9 +229,11 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         jLabel11 = new javax.swing.JLabel();
         jScrollPane4 = new javax.swing.JScrollPane();
         observaciones1 = new javax.swing.JTextArea();
-        NombreMaterial2 = new javax.swing.JComboBox<>();
         jLabel10 = new javax.swing.JLabel();
         required2 = new javax.swing.JLabel();
+        name = new javax.swing.JTextField();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        recomendaciones = new javax.swing.JList<>();
         jPanel4 = new javax.swing.JPanel();
         jScrollPane5 = new javax.swing.JScrollPane();
         Registros = new javax.swing.JTable();
@@ -347,7 +390,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                             .addGap(18, 18, 18)
                             .addComponent(required, javax.swing.GroupLayout.PREFERRED_SIZE, 226, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 952, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(81, Short.MAX_VALUE))
+                .addContainerGap(118, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -403,7 +446,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 262, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(27, 27, 27)
                 .addComponent(generar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(28, Short.MAX_VALUE))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
 
         jTabbedPane3.addTab("Entrada", jPanel3);
@@ -418,12 +461,6 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         jLabel7.setText("Entregó");
 
         jLabel8.setText("Recibió");
-
-        NombreMaterialExtra2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                NombreMaterialExtra2ActionPerformed(evt);
-            }
-        });
 
         CantidadMaterial1.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
@@ -443,8 +480,6 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         });
 
         jLabel9.setText("Cantidad");
-
-        Titulo_NombreMaterialExtra2.setText("Ingrese el nombre");
 
         jButton4.setText("Añadir a la lista");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
@@ -475,13 +510,26 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         observaciones1.setRows(5);
         jScrollPane4.setViewportView(observaciones1);
 
-        NombreMaterial2.addActionListener(new java.awt.event.ActionListener() {
+        jLabel10.setText("Material");
+
+        name.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                NombreMaterial2ActionPerformed(evt);
+                nameActionPerformed(evt);
+            }
+        });
+        name.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                nameKeyTyped(evt);
             }
         });
 
-        jLabel10.setText("Material");
+        recomendaciones.setBorder(null);
+        recomendaciones.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                recomendacionesMouseClicked(evt);
+            }
+        });
+        jScrollPane6.setViewportView(recomendaciones);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -491,55 +539,43 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(192, 192, 192)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(CantidadMaterial1, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel9))
-                                .addGap(18, 18, 18))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(important1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(Titulo_NombreMaterialExtra2)
-                                .addGap(6, 6, 6)))
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGap(416, 416, 416)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel11)
-                                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 368, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGap(31, 31, 31)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel10)
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(NombreMaterialExtra2)
-                                            .addComponent(NombreMaterial2, 0, 524, Short.MAX_VALUE))
-                                        .addGap(18, 18, 18)
-                                        .addComponent(required2))))))
+                            .addComponent(CantidadMaterial1, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel9)
+                            .addComponent(important1, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(440, 440, 440)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel11)
+                            .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 368, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(113, 113, 113)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel8)
-                            .addComponent(jLabel7))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(recibio, javax.swing.GroupLayout.DEFAULT_SIZE, 457, Short.MAX_VALUE)
-                            .addComponent(entrego)))
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel8)
+                                    .addComponent(jLabel7))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(recibio, javax.swing.GroupLayout.DEFAULT_SIZE, 457, Short.MAX_VALUE)
+                                    .addComponent(entrego)))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGap(2, 2, 2)
+                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 952, javax.swing.GroupLayout.PREFERRED_SIZE))))
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(525, 525, 525)
-                        .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(36, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 952, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(91, 91, 91))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addComponent(jButton4)
-                        .addGap(497, 497, 497))))
+                        .addGap(492, 492, 492)
+                        .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(479, 479, 479)
+                        .addComponent(jButton4))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(153, 153, 153)
+                        .addComponent(required2, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(31, 31, 31)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 687, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel10)
+                            .addComponent(name, javax.swing.GroupLayout.PREFERRED_SIZE, 687, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(73, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -557,31 +593,34 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                             .addComponent(recibio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel8)))
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(55, 55, 55)
+                .addGap(30, 30, 30)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(jLabel10))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(CantidadMaterial1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(NombreMaterial2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(required2))
+                    .addComponent(jLabel10)
+                    .addComponent(jLabel9))
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(30, 30, 30)
-                        .addComponent(important1))
+                        .addGap(4, 4, 4)
+                        .addComponent(CantidadMaterial1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(name, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(NombreMaterialExtra2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(Titulo_NombreMaterialExtra2))))
-                .addGap(18, 18, 18)
+                        .addGap(12, 12, 12)
+                        .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(required2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(48, 48, 48)
+                        .addGap(36, 36, 36)
+                        .addComponent(important1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton4)
-                .addGap(29, 29, 29)
+                .addGap(26, 26, 26)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 270, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(28, 28, 28)
+                .addGap(18, 18, 18)
                 .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addGap(18, 18, 18))
         );
 
         jTabbedPane3.addTab("Salida", jPanel2);
@@ -632,7 +671,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                         .addGap(132, 132, 132))
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 1056, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(44, Short.MAX_VALUE))))
+                        .addContainerGap(81, Short.MAX_VALUE))))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -644,7 +683,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
                     .addComponent(jButton5)
                     .addComponent(jButton2)
                     .addComponent(jButton3))
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addContainerGap(40, Short.MAX_VALUE))
         );
 
         jTabbedPane3.addTab("Registros", jPanel4);
@@ -657,7 +696,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane3)
+            .addComponent(jTabbedPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 822, Short.MAX_VALUE)
         );
 
         pack();
@@ -825,14 +864,6 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         model.setRowCount(0);
     }
 
-    private void NombreMaterialExtraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NombreMaterialExtraActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_NombreMaterialExtraActionPerformed
-
-    private void NombreMaterialExtra2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NombreMaterialExtra2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_NombreMaterialExtra2ActionPerformed
-
     private void CantidadMaterial1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_CantidadMaterial1StateChanged
         // TODO add your handling code here:
     }//GEN-LAST:event_CantidadMaterial1StateChanged
@@ -850,19 +881,21 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     }//GEN-LAST:event_CantidadMaterial1KeyTyped
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        if ((int) CantidadMaterial1.getValue() == 0 || (NombreMaterialExtra2.getText().isEmpty() && NombreMaterial2.getSelectedItem().equals("Otro"))) {
+        if ((int) CantidadMaterial1.getValue() == 0 || (name.getText().isEmpty())) {
             required2.setText("Campos Requeridos");
             required2.setForeground(Color.RED);
         } else {
             required2.setText("                 ");
             DefaultTableModel modelo = (DefaultTableModel) productos1.getModel();
 
-            if (NombreMaterial2.getSelectedItem().equals("Otro")) {
-                materialesNuevos.add(new Material((int) CantidadMaterial1.getValue(), NombreMaterialExtra2.getText()));
-                modelo.addRow(new Object[]{CantidadMaterial1.getValue(), NombreMaterialExtra2.getText()});
-            } else {
-                modelo.addRow(new Object[]{CantidadMaterial1.getValue(), NombreMaterial2.getSelectedItem()});
-            }
+//            if (NombreMaterial2.getSelectedItem().equals("Otro")) {
+//                materialesNuevos.add(new Material((int) CantidadMaterial1.getValue(), NombreMaterialExtra2.getText()));
+//                modelo.addRow(new Object[]{CantidadMaterial1.getValue(), NombreMaterialExtra2.getText()});
+//            } else {
+//                modelo.addRow(new Object[]{CantidadMaterial1.getValue(), NombreMaterial2.getSelectedItem()});
+//            }
+            modelo.addRow(new Object[]{CantidadMaterial1.getValue(), name.getText()});
+           
             productos1.setModel(modelo);
             TableColumn agregarColumn;
             agregarColumn = productos1.getColumnModel().getColumn(2);
@@ -871,10 +904,11 @@ public class Main extends javax.swing.JFrame implements ActionListener {
             agregarColumn.setCellRenderer(new myrenderer(false, "Eliminar"));
 
             CantidadMaterial1.setValue(0);
-            NombreMaterialExtra2.setText("");
+            name.setText("");
         }
     }//GEN-LAST:event_jButton4ActionPerformed
 
+    
     private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
         TableModel modelo = productos1.getModel();
         if (recibio.getText().isEmpty() || entrego.getText().isEmpty() || modelo.getRowCount() == 0) {
@@ -950,16 +984,6 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         }
     }//GEN-LAST:event_NombreMaterialActionPerformed
 
-    private void NombreMaterial2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NombreMaterial2ActionPerformed
-        if (NombreMaterial2.getSelectedItem().equals("Otro")) {
-            NombreMaterialExtra2.setVisible(true);
-            Titulo_NombreMaterialExtra2.setVisible(true);
-        } else {
-            NombreMaterialExtra2.setVisible(false);
-            Titulo_NombreMaterialExtra2.setVisible(false);
-        }
-    }//GEN-LAST:event_NombreMaterial2ActionPerformed
-
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         Materiales materiales = new Materiales(materialesExistentes);
         materiales.setVisible(true);
@@ -985,6 +1009,38 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     private void jPanel3KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jPanel3KeyTyped
         System.out.println("Tecla tipeada" + evt.getExtendedKeyCode());
     }//GEN-LAST:event_jPanel3KeyTyped
+
+    private void NombreMaterialExtraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NombreMaterialExtraActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_NombreMaterialExtraActionPerformed
+
+    private void nameKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_nameKeyTyped
+//        System.out.println("Hola");
+//        System.out.println(name.getText() + evt.getKeyChar());
+//        DefaultListModel<String> modelo = new DefaultListModel<>();     
+//        
+//        String textoIntroducido = name.getText().toLowerCase();
+//        if (!name.getText().isEmpty()) {
+//            List<Material> materialesFiltrados = materialesExistentes.stream()
+//                    .filter(s -> s.getNombre().toLowerCase().contains(textoIntroducido) ||
+//                            s.getNombre().toLowerCase().startsWith(textoIntroducido))
+//                    .collect(Collectors.toList());
+//            for (Material materialFiltrado : materialesFiltrados) {
+//                modelo.addElement(materialFiltrado.getNombre());
+//            }
+//            
+//        }
+//        recomendaciones.setModel(modelo);
+
+    }//GEN-LAST:event_nameKeyTyped
+
+    private void nameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_nameActionPerformed
+
+    private void recomendacionesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_recomendacionesMouseClicked
+        name.setText(recomendaciones.getSelectedValue());
+    }//GEN-LAST:event_recomendacionesMouseClicked
 
     private void limpiar2() {
         recibio.setText("");
@@ -1033,16 +1089,19 @@ public class Main extends javax.swing.JFrame implements ActionListener {
         return file.exists() && !file.isDirectory();
     }
 
+    /*
+    * Añade materiales que no esten repetidos en la lista principal
+    */
+    public boolean added(Material material){
+        return false;
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JSpinner CantidadMaterial;
     private javax.swing.JSpinner CantidadMaterial1;
     private javax.swing.JComboBox<String> NombreMaterial;
-    private javax.swing.JComboBox<String> NombreMaterial2;
     private javax.swing.JTextField NombreMaterialExtra;
-    private javax.swing.JTextField NombreMaterialExtra2;
     private javax.swing.JTable Registros;
     private javax.swing.JLabel Titulo_NombreMaterialExtra;
-    private javax.swing.JLabel Titulo_NombreMaterialExtra2;
     private javax.swing.JTextField almacenista;
     private javax.swing.JTextField entrego;
     private javax.swing.JToggleButton generar;
@@ -1072,8 +1131,10 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JTabbedPane jTabbedPane3;
     private javax.swing.JToggleButton jToggleButton2;
+    private javax.swing.JTextField name;
     private javax.swing.JTextField nombre;
     private javax.swing.JTextArea observaciones;
     private javax.swing.JTextArea observaciones1;
@@ -1081,6 +1142,7 @@ public class Main extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JTable productos1;
     private javax.swing.JTextField proovedor;
     private javax.swing.JTextField recibio;
+    private javax.swing.JList<String> recomendaciones;
     private javax.swing.JLabel required;
     private javax.swing.JLabel required2;
     // End of variables declaration//GEN-END:variables
